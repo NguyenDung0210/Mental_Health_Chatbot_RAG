@@ -1,0 +1,3 @@
+langchain==0.3.27
+pinecone-client==6.0.0
+streamlit==1.49.1
