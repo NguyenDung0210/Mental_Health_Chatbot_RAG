@@ -1,55 +1,40 @@
-from main import ChatBot
 import streamlit as st
+from main import ChatBot
+
 bot = ChatBot()
-    
-st.set_page_config(page_title="Symptom-chatbot")
-with st.sidebar:
-    st.title('Hi there! I am mental health symptom analyzing chatbot!')
-# Function for generating LLM response
-def conv_past(inp):
-    ret = []
-    for num,comb in enumerate(inp):
-        ret.append(f"Message {num%2} by the {comb['role']}: {comb['content']}\n")
-    return ret
-def generate_response(input):
-    #result = bot.rag_chain.invoke(input)
-    result = bot.rag_chain.invoke({"context":bot.docsearch.as_retriever(),"question":input,"pasts":str(conv_past(st.session_state.messages))})
-    return result
-def afterRes(input_string):
-    # Find the index of "Question:"
-    question_index = input_string.find("Question:")
-    if question_index == -1:
-        return input_string
-        #return "No 'Question:' found in the input string"
-    # Find the index of "Answer:"
-    answer_index = input_string.find("Answer:", question_index)
-    if answer_index == -1:
-        return input_string
-        #return "No 'Answer:' found in the input string"
-    # Extract the text after "Answer:"
-    text_after_answer = input_string[answer_index + len("Answer:"):].strip()
-    return text_after_answer
-        
-        
-    #return response
-# Store LLM generated responses
-if "messages" not in st.session_state.keys():
-    st.session_state.messages = [{"role": "assistant", "content": "Hi there!"}]
-# Display chat messages
+
+st.set_page_config(page_title="Mental Health Chatbot")
+st.sidebar.title("Hi! I'm a mental health symptom analyzer.")
+
+# Hàm xử lý lịch sử chat
+def conv_past(messages):
+    return "\n".join([f"Message {i}: {msg['role']}: {msg['content']}" for i, msg in enumerate(messages)])
+
+# Tạo response
+def generate_response(input_text, pasts):
+    result = bot.rag_chain.invoke({"question": input_text, "pasts": pasts})
+    # Xử lý output (lấy phần Answer)
+    answer_start = result.find("Answer:")
+    return result[answer_start + 7:].strip() if answer_start != -1 else result
+
+# Quản lý session
+if "messages" not in st.session_state:
+    st.session_state.messages = [{"role": "assistant", "content": "Hi! How can I help with your mental health today?"}]
+
+# Hiển thị chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
-# User-provided prompt
-if input := st.chat_input():
-    st.session_state.messages.append({"role": "user", "content": input})
+
+# Input từ user
+if user_input := st.chat_input("Type your message..."):
+    st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
-        st.write(input)
-# Generate a new response if last message is not from assistant
-if st.session_state.messages[-1]["role"] != "assistant":
+        st.write(user_input)
+    
     with st.chat_message("assistant"):
-        with st.spinner("Generating.."):
-            response = generate_response(input) 
-            response = afterRes(response)
-            st.write(response) 
-    message = {"role": "assistant", "content": response}
-    st.session_state.messages.append(message)
+        with st.spinner("Thinking..."):
+            pasts = conv_past(st.session_state.messages[:-1])
+            response = generate_response(user_input, pasts)
+            st.write(response)
+    st.session_state.messages.append({"role": "assistant", "content": response})
