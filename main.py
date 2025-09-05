@@ -1,7 +1,7 @@
-from langchain.document_loaders import TextLoader
+from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores.pinecone import Pinecone
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Pinecone
 from langchain.llms import HuggingFaceHub
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
@@ -18,13 +18,13 @@ class ChatBot:
         pinecone.init(api_key=os.getenv("PINECONE_TOKEN"), environment="gcp-starter")
 
         # Tải dữ liệu
-        loader = TextLoader("depression_resources.txt")  # Thay bằng file của bạn
+        loader = TextLoader("depression_resources.txt")
         documents = loader.load()
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)  # Tăng overlap để tốt hơn
         docs = text_splitter.split_documents(documents)
         
         # Embeddings
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")  # Mô hình embedding miễn phí
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         
         # Tạo index Pinecone
         index_name = "mental-health-bot"
@@ -36,7 +36,7 @@ class ChatBot:
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
         self.llm = HuggingFaceHub(repo_id=repo_id, model_kwargs={"temperature": 0.7, "max_length": 512})
         
-        # Prompt template cho menta l health
+        # Prompt template cho mental health
         template = """
         You are a symptom tracking chatbot for mental health. Converse with the user only about mental health topics.
         Collect symptoms during the conversation. When you have enough info or user says "Thank you, I'm done", return a list of symptoms and a possible mental health issue.
