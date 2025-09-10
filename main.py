@@ -12,31 +12,30 @@ from dotenv import load_dotenv
 
 class ChatBot:
     def __init__(self):
-        # Thiết lập môi trường
         load_dotenv()
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HF_TOKEN")
         pinecone.init(api_key=os.getenv("PINECONE_TOKEN"), environment="gcp-starter")
 
-        # Tải dữ liệu
+        # Load data
         loader = TextLoader("depression_resources.txt")
         documents = loader.load()
-        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)  # Tăng overlap để tốt hơn
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)  # Increase overlap for better results
         docs = text_splitter.split_documents(documents)
         
         # Embeddings
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        
-        # Tạo index Pinecone
+
+        # Create Pinecone index
         index_name = "mental-health-bot"
         if index_name not in pinecone.list_indexes():
-            pinecone.create_index(name=index_name, dimension=384, metric="cosine")  # Dimension phù hợp với embedding model
+            pinecone.create_index(name=index_name, dimension=384, metric="cosine")  # Dimension suitable for embeddings model
         self.docsearch = Pinecone.from_documents(docs, embeddings, index_name=index_name)
         
         # LLM
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
         self.llm = HuggingFaceHub(repo_id=repo_id, model_kwargs={"temperature": 0.7, "max_length": 512})
         
-        # Prompt template cho mental health
+        # Prompt template for mental health
         template = """
         You are a symptom tracking chatbot for mental health. Converse with the user only about mental health topics.
         Collect symptoms during the conversation. When you have enough info or user says "Thank you, I'm done", return a list of symptoms and a possible mental health issue.
