@@ -12,37 +12,59 @@ from dotenv import load_dotenv
 
 class ChatBot:
     def __init__(self):
+        print("Starting ChatBot initialization...")
+        # Load environment variables
         load_dotenv()
-        os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HF_TOKEN")
+        hf_token = os.getenv("HF_TOKEN")
+        pinecone_token = os.getenv("PINECONE_TOKEN")
+        if not hf_token or not pinecone_token:
+            raise ValueError("HF_TOKEN or PINECONE_TOKEN not found in .env")
+        print("Environment variables loaded.")
 
+        os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
+        
         # Initialize Pinecone
-        pc = PineconeClient(api_key=os.getenv("PINECONE_TOKEN"))
+        pc = PineconeClient(api_key=pinecone_token)
         index_name = "mental-health-bot"
+        print(f"Checking Pinecone index: {index_name}")
         if index_name not in pc.list_indexes().names():
+            print(f"Creating Pinecone index: {index_name}")
             pc.create_index(
                 name=index_name,
                 dimension=384,
                 metric="cosine",
-                spec=ServerlessSpec(cloud="gcp", region="us-central1")
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+                deletion_protection="disabled"
             )
+            print("Index created successfully. Wait a moment for it to be ready...")
+        print("Pinecone initialized.")
 
         # Load data
+        print("Loading documents...")
         loader = TextLoader("depression_resources.txt")
         documents = loader.load()
+        print(f"Loaded {len(documents)} documents.")
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         docs = text_splitter.split_documents(documents)
-        
+        print(f"Split into {len(docs)} chunks.")
+
         # Embeddings
+        print("Initializing embeddings...")
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        print("Embeddings initialized.")
 
         # Create Pinecone index
-        self.docsearch = Pinecone.from_documents(docs, embeddings, index_name=index_name)
+        print("Creating Pinecone vector store...")
+        self.docsearch = Pinecone.from_documents(docs, embeddings, index_name=index_name, pinecone_api_key=pinecone_token)
+        print("Pinecone vector store created.")
         
         # LLM
+        print("Initializing LLM...")
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
         self.llm = HuggingFaceHub(repo_id=repo_id, model_kwargs={"temperature": 0.7, "max_length": 512})
+        print("LLM initialized.")
         
-        # Prompt template for mental health
+        # Prompt template
         template = """
         You are a symptom tracking chatbot for mental health. Converse with the user only about mental health topics.
         Collect symptoms during the conversation. When you have enough info or user says "Thank you, I'm done", return a list of symptoms and a possible mental health issue.
@@ -54,9 +76,14 @@ class ChatBot:
         self.prompt = PromptTemplate(template=template, input_variables=["pasts", "context", "question"])
         
         # Chain RAG
+        print("Setting up RAG chain...")
         self.rag_chain = (
             {"context": self.docsearch.as_retriever(), "question": RunnablePassthrough(), "pasts": RunnablePassthrough()}
             | self.prompt
             | self.llm
             | StrOutputParser()
         )
+        print("ChatBot initialization completed.")
+
+if __name__ == "__main__":
+    chatbot = ChatBot()
