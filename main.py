@@ -1,6 +1,6 @@
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Pinecone
 from langchain_community.llms import HuggingFaceHub
 from langchain.prompts import PromptTemplate
@@ -16,15 +16,15 @@ class ChatBot:
         # Load environment variables
         load_dotenv()
         hf_token = os.getenv("HF_TOKEN")
-        pinecone_token = os.getenv("PINECONE_TOKEN")
-        if not hf_token or not pinecone_token:
-            raise ValueError("HF_TOKEN or PINECONE_TOKEN not found in .env")
+        pinecone_api_key = os.getenv("PINECONE_API_KEY")
+        if not hf_token or not pinecone_api_key:
+            raise ValueError("HF_TOKEN or PINECONE_API_KEY not found in .env")
         print("Environment variables loaded.")
 
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
         
         # Initialize Pinecone
-        pc = PineconeClient(api_key=pinecone_token)
+        pc = PineconeClient(api_key=pinecone_api_key)
         index_name = "mental-health-bot"
         print(f"Checking Pinecone index: {index_name}")
         if index_name not in pc.list_indexes().names():
@@ -44,7 +44,7 @@ class ChatBot:
         loader = TextLoader("depression_resources.txt")
         documents = loader.load()
         print(f"Loaded {len(documents)} documents.")
-        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        text_splitter = CharacterTextSplitter(chunk_size=6000, chunk_overlap=200)
         docs = text_splitter.split_documents(documents)
         print(f"Split into {len(docs)} chunks.")
 
@@ -55,7 +55,7 @@ class ChatBot:
 
         # Create Pinecone index
         print("Creating Pinecone vector store...")
-        self.docsearch = Pinecone.from_documents(docs, embeddings, index_name=index_name, pinecone_api_key=pinecone_token)
+        self.docsearch = Pinecone.from_documents(docs, embeddings, index_name=index_name)
         print("Pinecone vector store created.")
         
         # LLM
