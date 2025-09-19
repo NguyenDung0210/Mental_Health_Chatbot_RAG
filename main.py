@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 class ChatBot:
     def __init__(self):
-        print("Starting ChatBot initialization...")
+        print("Starting ChatBot initialization...") 
         # Load environment variables
         load_dotenv()
         hf_token = os.getenv("HF_TOKEN")
