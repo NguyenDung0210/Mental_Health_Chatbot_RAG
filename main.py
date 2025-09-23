@@ -1,18 +1,18 @@
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Pinecone
+from langchain_pinecone import PineconeVectorStore
 from langchain_community.llms import HuggingFaceHub
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
-from pinecone import Pinecone as PineconeClient, ServerlessSpec
+from pinecone import Pinecone, ServerlessSpec
 import os
 from dotenv import load_dotenv
 
 class ChatBot:
     def __init__(self):
-        print("Starting ChatBot initialization...") 
+        print("Starting ChatBot initialization...")
         # Load environment variables
         load_dotenv()
         hf_token = os.getenv("HF_TOKEN")
@@ -24,7 +24,7 @@ class ChatBot:
         os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
         
         # Initialize Pinecone
-        pc = PineconeClient(api_key=pinecone_api_key)
+        pc = Pinecone(api_key=pinecone_api_key)
         index_name = "mental-health-bot"
         print(f"Checking Pinecone index: {index_name}")
         if index_name not in pc.list_indexes().names():
@@ -53,9 +53,14 @@ class ChatBot:
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         print("Embeddings initialized.")
 
-        # Create Pinecone index
+        # Create Pinecone vector store
         print("Creating Pinecone vector store...")
-        self.docsearch = Pinecone.from_documents(docs, embeddings, index_name=index_name)
+        self.docsearch = PineconeVectorStore.from_documents(
+            documents=docs,
+            embedding=embeddings,
+            index_name=index_name,
+            pinecone_api_key=pinecone_api_key  # Truyền API key trực tiếp
+        )
         print("Pinecone vector store created.")
         
         # LLM
@@ -86,4 +91,5 @@ class ChatBot:
         print("ChatBot initialization completed.")
 
 if __name__ == "__main__":
+    print("Running main.py...")
     chatbot = ChatBot()
