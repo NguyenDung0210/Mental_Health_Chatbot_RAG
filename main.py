@@ -2,7 +2,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from langchain_community.llms import HuggingFaceHub
+from langchain_huggingface import HuggingFaceEndpoint
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
@@ -66,7 +66,12 @@ class ChatBot:
         # LLM
         print("Initializing LLM...")
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-        self.llm = HuggingFaceHub(repo_id=repo_id, model_kwargs={"temperature": 0.7, "max_length": 512})
+        self.llm = HuggingFaceEndpoint(
+            repo_id=repo_id,
+            task="text-generation",  # Chỉ định task
+            huggingfacehub_api_token=hf_token,  # Truyền token trực tiếp
+            model_kwargs={"temperature": 0.7, "max_length": 512}
+        )
         print("LLM initialized.")
         
         # Prompt template
