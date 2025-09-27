@@ -59,7 +59,7 @@ class ChatBot:
             documents=docs,
             embedding=embeddings,
             index_name=index_name,
-            pinecone_api_key=pinecone_api_key  # Truyền API key trực tiếp
+            pinecone_api_key=pinecone_api_key
         )
         print("Pinecone vector store created.")
         
@@ -68,7 +68,7 @@ class ChatBot:
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
         self.llm = HuggingFaceEndpoint(
             repo_id=repo_id,
-            task="text-generation",  # Chỉ định task
+            task="text-generation",
             huggingfacehub_api_token=hf_token,  # Truyền token trực tiếp
             model_kwargs={"temperature": 0.7, "max_length": 512}
         )
