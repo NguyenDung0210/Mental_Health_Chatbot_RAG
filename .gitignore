@@ -1,3 +1,4 @@
 .env
 raw.txt
 depression_resources.txt
+__pycache__/
