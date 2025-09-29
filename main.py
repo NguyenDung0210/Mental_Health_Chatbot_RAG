@@ -100,7 +100,7 @@ class ChatBot:
             task="text-generation",
             huggingfacehub_api_token=hf_token,
             temperature=0.7,
-            max_length=512, 
+            model_kwargs={"max_length": 512}, 
             timeout=30
         )
         print("LLM initialized.")
