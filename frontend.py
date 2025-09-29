@@ -1,7 +1,10 @@
 import streamlit as st
 from main import ChatBot
 
-bot = ChatBot()
+# Initialize chatbot
+if "bot" not in st.session_state:
+    st.session_state.bot = ChatBot()
+    st.write("ChatBot initialized successfully!")
 
 st.set_page_config(page_title="Mental Health Chatbot")
 st.sidebar.title("Hi! I'm a mental health symptom analyzer.")
@@ -12,9 +15,15 @@ def conv_past(messages):
 
 # Create response
 def generate_response(input_text, pasts):
-    result = bot.rag_chain.invoke({"question": input_text, "pasts": pasts})
-    answer_start = result.find("Answer:")
-    return result[answer_start + 7:].strip() if answer_start != -1 else result
+    try:
+        result = st.session_state.bot.rag_chain.invoke({
+            "question": input_text,
+            "pasts": pasts
+        })
+        answer_start = result.find("Answer:")
+        return result[answer_start + 7:].strip() if answer_start != -1 else result
+    except Exception as e:
+        return f"Error generating response: {str(e)}"
 
 # Manage session
 if "messages" not in st.session_state:
