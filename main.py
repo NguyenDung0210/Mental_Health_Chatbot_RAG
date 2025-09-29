@@ -8,6 +8,7 @@ from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
 from pinecone import Pinecone, ServerlessSpec
 import os
+import time
 from dotenv import load_dotenv
 
 class ChatBot:
@@ -36,14 +37,26 @@ class ChatBot:
                 spec=ServerlessSpec(cloud="aws", region="us-east-1"),
                 deletion_protection="disabled"
             )
-            print("Index created successfully. Wait a moment for it to be ready...")
+            print("Index created. Waiting for it to be ready...")
+            for _ in range(30):  # Max 3 minutes
+                index_desc = pc.describe_index(index_name)
+                if index_desc.get("status", {}).get("ready", False):
+                    print("Index is ready!")
+                    break
+                time.sleep(6)
+            else:
+                raise RuntimeError(f"Index {index_name} not ready after 3 minutes.")
         print("Pinecone initialized.")
 
         # Load data
         print("Loading documents...")
-        loader = TextLoader("depression_resources.txt")
-        documents = loader.load()
-        print(f"Loaded {len(documents)} documents.")
+        try:
+            loader = TextLoader("depression_resources.txt")
+            documents = loader.load()
+            print(f"Loaded {len(documents)} documents.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load documents: {str(e)}")
+
         text_splitter = CharacterTextSplitter(chunk_size=6000, chunk_overlap=200)
         docs = text_splitter.split_documents(documents)
         print(f"Split into {len(docs)} chunks.")
@@ -55,13 +68,29 @@ class ChatBot:
 
         # Create Pinecone vector store
         print("Creating Pinecone vector store...")
-        self.docsearch = PineconeVectorStore.from_documents(
-            documents=docs,
-            embedding=embeddings,
-            index_name=index_name,
-            pinecone_api_key=pinecone_api_key
-        )
-        print("Pinecone vector store created.")
+        try:
+            index = pc.Index(index_name)
+            stats = index.describe_index_stats()
+            existing_vectors = stats.get("total_vector_count", 0)
+            print(f"Index has {existing_vectors} vectors.")
+            if existing_vectors >= len(docs):
+                print("Vectors already exist. Using existing index...")
+                self.docsearch = PineconeVectorStore(
+                    index_name=index_name,
+                    embedding=embeddings,
+                    pinecone_api_key=pinecone_api_key
+                )
+            else:
+                print("Upserting new vectors...")
+                self.docsearch = PineconeVectorStore.from_documents(
+                    documents=docs,
+                    embedding=embeddings,
+                    index_name=index_name,
+                    pinecone_api_key=pinecone_api_key
+                )
+            print("Pinecone vector store created.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to create Pinecone vector store: {str(e)}")
         
         # LLM
         print("Initializing LLM...")
@@ -69,8 +98,10 @@ class ChatBot:
         self.llm = HuggingFaceEndpoint(
             repo_id=repo_id,
             task="text-generation",
-            huggingfacehub_api_token=hf_token,  # Truyền token trực tiếp
-            model_kwargs={"temperature": 0.7, "max_length": 512}
+            huggingfacehub_api_token=hf_token,
+            temperature=0.7,
+            max_length=512, 
+            timeout=30
         )
         print("LLM initialized.")
         
