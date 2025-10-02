@@ -38,7 +38,7 @@ class ChatBot:
                 deletion_protection="disabled"
             )
             print("Index created. Waiting for it to be ready...")
-            for _ in range(30):  # Max 3 minutes
+            for _ in range(30):  # Max 3 mins
                 index_desc = pc.describe_index(index_name)
                 if index_desc.get("status", {}).get("ready", False):
                     print("Index is ready!")
@@ -100,7 +100,7 @@ class ChatBot:
             task="text-generation",
             huggingfacehub_api_token=hf_token,
             temperature=0.7,
-            model_kwargs={"max_length": 512}, 
+            model_kwargs={"max_length": 512},
             timeout=30
         )
         print("LLM initialized.")
@@ -119,7 +119,11 @@ class ChatBot:
         # Chain RAG
         print("Setting up RAG chain...")
         self.rag_chain = (
-            {"context": self.docsearch.as_retriever(), "question": RunnablePassthrough(), "pasts": RunnablePassthrough()}
+            {
+                "context": lambda x: self.docsearch.as_retriever().invoke(x["question"]),
+                "question": lambda x: x["question"],
+                "pasts": lambda x: x["pasts"]
+            }
             | self.prompt
             | self.llm
             | StrOutputParser()
