@@ -38,7 +38,7 @@ class ChatBot:
                 deletion_protection="disabled"
             )
             print("Index created. Waiting for it to be ready...")
-            for _ in range(30):  # Max 3 mins
+            for _ in range(30):  # Chờ tối đa 3 phút
                 index_desc = pc.describe_index(index_name)
                 if index_desc.get("status", {}).get("ready", False):
                     print("Index is ready!")
@@ -100,7 +100,7 @@ class ChatBot:
             task="text-generation",
             huggingfacehub_api_token=hf_token,
             temperature=0.7,
-            model_kwargs={"max_length": 512},
+            model_kwargs={"max_new_tokens": 512},  # Thay max_length bằng max_new_tokens
             timeout=30
         )
         print("LLM initialized.")
