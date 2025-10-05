@@ -97,10 +97,10 @@ class ChatBot:
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
         self.llm = HuggingFaceEndpoint(
             repo_id=repo_id,
-            task="text-generation",
+            task="conversational",  # Sử dụng task="conversational"
             huggingfacehub_api_token=hf_token,
             temperature=0.7,
-            model_kwargs={"max_new_tokens": 512},  # Thay max_length bằng max_new_tokens
+            max_new_tokens=512,
             timeout=30
         )
         print("LLM initialized.")
