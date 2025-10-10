@@ -97,7 +97,7 @@ class ChatBot:
         repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
         self.llm = HuggingFaceEndpoint(
             repo_id=repo_id,
-            task="conversational",  # Sử dụng task="conversational"
+            task="conversational",
             huggingfacehub_api_token=hf_token,
             temperature=0.7,
             max_new_tokens=512,
