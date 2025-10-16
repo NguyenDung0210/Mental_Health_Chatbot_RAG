@@ -9,7 +9,6 @@ if "bot" not in st.session_state:
 st.set_page_config(page_title="Mental Health Chatbot")
 st.sidebar.title("Hi! I'm a mental health symptom analyzer.")
 
-# Function to convert past messages
 def conv_past(messages):
     return "\n".join([f"Message {i}: {msg['role']}: {msg['content']}" for i, msg in enumerate(messages)])
 

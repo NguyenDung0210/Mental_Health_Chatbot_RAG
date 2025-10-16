@@ -38,7 +38,7 @@ class ChatBot:
                 deletion_protection="disabled"
             )
             print("Index created. Waiting for it to be ready...")
-            for _ in range(30):  # Chờ tối đa 3 phút
+            for _ in range(30):  # Max 3 minutes waiting
                 index_desc = pc.describe_index(index_name)
                 if index_desc.get("status", {}).get("ready", False):
                     print("Index is ready!")
